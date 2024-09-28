@@ -154,7 +154,7 @@ for place in places:
         # print(location.text)
         if title_span.text != title:
             check_buffer.append(
-                f"{title}: {title_span.text} # {loc}: {location.text}\n"
+                f"{title}: {title_span.text}\n# {loc}: {location.text}\n"
             )
 
         # 리뷰 클릭
