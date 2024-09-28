@@ -96,6 +96,7 @@ for place in places:
         continue
 
     title = place["title"]
+    loc = place["address"]
 
     # 이미 한 지역 스킵
     if title in existing_titles:
@@ -145,9 +146,16 @@ for place in places:
 
         # 선택한 첫번째 링크와 제목이 같은지 비교
         title_span = driver.find_element(By.CSS_SELECTOR, "div#_title span.GHAhO")
-        print(title_span.text)
+        parent = wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "div.vV_z_"))
+        )
+        location = parent.find_element(By.CLASS_NAME, "LDgIH")
+        # print(title_span.text)
+        # print(location.text)
         if title_span.text != title:
-            check_buffer.append(f"{title}: {title_span.text}\n")
+            check_buffer.append(
+                f"{title}: {title_span.text} # {loc}: {location.text}\n"
+            )
 
         # 리뷰 클릭
         driver.find_element(
