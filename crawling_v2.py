@@ -155,6 +155,7 @@ def save_errors(buffer, filename):
 # 크롤링 작업을 처리하며 데이터를 모아 한 번에 저장
 data_buffer = []
 error_buffer = []
+check = []
 BUFFER_LIMIT = 5  # 버퍼에 데이터를 몇 개 모을지 설정
 
 # For each place
@@ -222,7 +223,7 @@ for place in places:
         # print(location.text)
         same = compare_addresses(loc, location.text)
         if not same:
-            continue
+            check.append(f"{title}: {title_span.text} # {loc}: {location.text}")
 
         # 리뷰 클릭
         driver.find_element(
