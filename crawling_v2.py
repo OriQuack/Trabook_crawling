@@ -6,6 +6,8 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver import ActionChains
+
 
 import json
 import time
@@ -204,6 +206,7 @@ for place in places:
         time.sleep(1)
 
         # 검색해서 결과로 바로 이동 되지 않으면 첫번째 링크 클릭
+        searched = False
         try:
             s_iframe = wait.until(
                 EC.presence_of_element_located((By.ID, "searchIframe"))
@@ -214,13 +217,23 @@ for place in places:
             )
             buttons = container.find_elements(By.CSS_SELECTOR, "[role='button']")
             buttons[0].click()
+            searched = True
 
         except Exception as e:
             print("The specified elements were not found within the given time.")
+        finally:
+            driver.switch_to.default_content()
 
         # Switch to iframe
         iframe = wait.until(EC.presence_of_element_located((By.ID, "entryIframe")))
         driver.switch_to.frame(iframe)
+
+        if searched:
+            home_button = wait.until(
+                EC.element_to_be_clickable((By.XPATH, "//a[.//span[text()='홈']]"))
+            )
+            home_button.click()
+            time.sleep(0.1)
 
         # 선택한 첫번째 링크와 제목이 같은지 비교
         title_span = driver.find_element(By.CSS_SELECTOR, "div#_title span.GHAhO")
@@ -228,17 +241,18 @@ for place in places:
             EC.presence_of_element_located((By.CSS_SELECTOR, "div.vV_z_"))
         )
         location = parent.find_element(By.CLASS_NAME, "LDgIH")
-        # print(title_span.text)
-        # print(location.text)
+        print(title_span.text)
+        print(location.text)
         same = compare_addresses(loc, location.text)
         if not same:
             check.append(f"{title}: {title_span.text} # {loc}: {location.text}")
 
         # 리뷰 클릭
-        driver.find_element(
-            By.XPATH,
-            '//*[@id="app-root"]/div/div/div/div[4]/div/div/div/div//a[span[text()="리뷰"]]',
-        ).click()
+        review_button = wait.until(
+            EC.element_to_be_clickable((By.XPATH, "//a[.//span[text()='리뷰']]"))
+        )
+        review_button.click()
+
         time.sleep(1.5)
 
         # 스크롤
