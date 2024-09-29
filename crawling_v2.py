@@ -152,6 +152,13 @@ def save_errors(buffer, filename):
             file.write(error + "\n")
 
 
+# 에러를 일정 양 모아서 한 번에 저장하는 함수
+def save_checks(buffer, filename):
+    with open(filename, "a", encoding="utf-8") as file:
+        for error in buffer:
+            file.write(error + "\n")
+
+
 # 크롤링 작업을 처리하며 데이터를 모아 한 번에 저장
 data_buffer = []
 error_buffer = []
@@ -305,6 +312,8 @@ for place in places:
             data_buffer = []  # 버퍼 초기화
             save_errors(error_buffer, "error.txt")
             error_buffer = []  # 버퍼 초기화
+            save_checks(check, "check.txt")
+            check = []  # 버퍼 초기화
 
     except Exception as e:
         data_buffer.append(place_data)
@@ -320,3 +329,4 @@ for place in places:
 
 save_data(data_buffer, "output.jsonl")
 save_errors(error_buffer, "error.txt")
+save_checks(check, "check.txt")
