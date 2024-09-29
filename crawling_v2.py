@@ -168,7 +168,7 @@ BUFFER_LIMIT = 5  # 버퍼에 데이터를 몇 개 모을지 설정
 # For each place
 for place in places:
     # 해당 지역만 진행
-    if place["areacode"] != "경상북도":
+    if place["areacode"] != "전라남도":
         continue
 
     title = place["title"]
@@ -203,18 +203,20 @@ for place in places:
         input_field.send_keys(Keys.RETURN)
         time.sleep(1)
 
-        # # 검색해서 결과로 바로 이동 되지 않으면 첫번째 링크 클릭
-        # not_sure = False
-        # try:
-        #     container = wait.until(
-        #         EC.presence_of_element_located((By.ID, "_pcmap_list_scroll_container"))
-        #     )
-        #     first_button = container.find_element(By.CSS_SELECTOR, "a.P7gyV")
-        #     first_button.click()
-        #     not_sure = True
+        # 검색해서 결과로 바로 이동 되지 않으면 첫번째 링크 클릭
+        try:
+            s_iframe = wait.until(
+                EC.presence_of_element_located((By.ID, "searchIframe"))
+            )
+            driver.switch_to.frame(s_iframe)
+            container = wait.until(
+                EC.presence_of_element_located((By.ID, "_pcmap_list_scroll_container"))
+            )
+            buttons = container.find_elements(By.CSS_SELECTOR, "[role='button']")
+            buttons[0].click()
 
-        # except Exception as e:
-        #     print("The specified elements were not found within the given time.")
+        except Exception as e:
+            print("The specified elements were not found within the given time.")
 
         # Switch to iframe
         iframe = wait.until(EC.presence_of_element_located((By.ID, "entryIframe")))
@@ -255,7 +257,6 @@ for place in places:
                 )
                 more_button.click()
             except Exception as e:  # 더이상 더보기가 없음
-                print(f"Failed to click on attempt {i+1}: {e}")
                 break
 
             # 스크롤
