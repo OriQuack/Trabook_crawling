@@ -13,6 +13,82 @@ import requests
 import chromedriver_autoinstaller
 from urllib.parse import urlparse, parse_qs
 
+import re
+
+
+def process_address(address):
+    # Remove content in parentheses
+    address = re.sub(r"\([^)]*\)", "", address)
+    # Split address into tokens
+    tokens = address.strip().split()
+    # Remove the province name (assumed to be the first word)
+    if tokens:
+        tokens = tokens[1:]
+    components = {}
+    i = 0
+    while i < len(tokens):
+        token = tokens[i]
+        if token.endswith("시"):
+            components["city"] = token
+        elif token.endswith("군"):
+            components["county"] = token
+        elif token.endswith("구"):
+            components["district"] = token
+        elif token.endswith("읍") or token.endswith("면") or token.endswith("동"):
+            components["town"] = token
+        elif token.endswith("길") or token.endswith("로"):
+            # Street name
+            components["street"] = token
+            # Check if next token is number
+            if i + 1 < len(tokens):
+                next_token = tokens[i + 1]
+                if next_token.replace("-", "").isdigit():
+                    components["number"] = next_token
+                    i += 1  # Skip next token
+        elif token.replace("-", "").isdigit() and "number" not in components:
+            # It's a pure number or number with dash, and number not already set
+            components["number"] = token
+        else:
+            # Other tokens
+            pass  # Ignore other tokens
+        i += 1
+    return components
+
+
+def compare_addresses(addr1, addr2):
+    comp1 = process_address(addr1)
+    comp2 = process_address(addr2)
+    # Compare city
+    if comp1.get("city", "") != comp2.get("city", ""):
+        return False
+    # Compare county
+    if comp1.get("county", "") != comp2.get("county", ""):
+        return False
+    # Compare street
+    if comp1.get("street", "") != comp2.get("street", ""):
+        return False
+    # Compare building number
+    num1 = comp1.get("number", "")
+    num2 = comp2.get("number", "")
+    if num1 == "" or num2 == "":
+        return False
+    # Remove numbers after dash
+    num1_base = num1.split("-")[0]
+    num2_base = num2.split("-")[0]
+    try:
+        num1_int = int(num1_base)
+        num2_int = int(num2_base)
+        if abs(num1_int - num2_int) <= 5:
+            return True
+        else:
+            return False
+    except ValueError:
+        if num1_base == num2_base:
+            return True
+        else:
+            return False
+
+
 # WebDriver headless mode settings
 options = webdriver.ChromeOptions()
 # options.add_argument("--headless=new")
@@ -76,17 +152,9 @@ def save_errors(buffer, filename):
             file.write(error + "\n")
 
 
-# 확인 필요한 리스트
-def save_checks(buffer, filename):
-    with open(filename, "a", encoding="utf-8") as file:
-        for error in buffer:
-            file.write(error + "\n")
-
-
 # 크롤링 작업을 처리하며 데이터를 모아 한 번에 저장
 data_buffer = []
 error_buffer = []
-check_buffer = []
 BUFFER_LIMIT = 5  # 버퍼에 데이터를 몇 개 모을지 설정
 
 # For each place
@@ -152,10 +220,9 @@ for place in places:
         location = parent.find_element(By.CLASS_NAME, "LDgIH")
         # print(title_span.text)
         # print(location.text)
-        if title_span.text != title:
-            check_buffer.append(
-                f"{title}: {title_span.text}\n# {loc}: {location.text}\n"
-            )
+        same = compare_addresses(loc, location.text)
+        if not same:
+            continue
 
         # 리뷰 클릭
         driver.find_element(
@@ -237,8 +304,6 @@ for place in places:
             data_buffer = []  # 버퍼 초기화
             save_errors(error_buffer, "error.txt")
             error_buffer = []  # 버퍼 초기화
-            save_checks(check_buffer, "check.txt")
-            check_buffer = []
 
     except Exception as e:
         data_buffer.append(place_data)
@@ -254,4 +319,3 @@ for place in places:
 
 save_data(data_buffer, "output.jsonl")
 save_errors(error_buffer, "error.txt")
-save_checks(check_buffer, "check.txt")
