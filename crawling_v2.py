@@ -131,7 +131,7 @@ with open("output.jsonl", "r", encoding="utf-8") as f:
     for line in f:
         json_obj = json.loads(line)
 
-        if "title" in json_obj:
+        if "title" in json_obj and "reviews" in json_obj:
             existing_titles.append(json_obj["title"])
 
 # Get 관광지 names
@@ -170,7 +170,7 @@ BUFFER_LIMIT = 5  # 버퍼에 데이터를 몇 개 모을지 설정
 # For each place
 for place in places:
     # 해당 지역만 진행
-    if place["areacode"] != "전라남도":
+    if place["areacode"] != "인천":
         continue
 
     title = place["title"]
@@ -233,7 +233,7 @@ for place in places:
                 EC.element_to_be_clickable((By.XPATH, "//a[.//span[text()='홈']]"))
             )
             home_button.click()
-            time.sleep(0.1)
+            time.sleep(0.3)
 
         # 선택한 첫번째 링크와 제목이 같은지 비교
         title_span = driver.find_element(By.CSS_SELECTOR, "div#_title span.GHAhO")
@@ -241,15 +241,13 @@ for place in places:
             EC.presence_of_element_located((By.CSS_SELECTOR, "div.vV_z_"))
         )
         location = parent.find_element(By.CLASS_NAME, "LDgIH")
-        print(title_span.text)
-        print(location.text)
-        same = compare_addresses(loc, location.text)
-        if not same:
+        if not title != title_span.text:
             check.append(f"{title}: {title_span.text} # {loc}: {location.text}")
 
         # 리뷰 클릭
-        review_button = wait.until(
-            EC.element_to_be_clickable((By.XPATH, "//a[.//span[text()='리뷰']]"))
+        review_button = driver.find_element(
+            By.XPATH,
+            '//*[@id="app-root"]//div[contains(@class,"flicking-camera")]//a[span[text()="리뷰"]]',
         )
         review_button.click()
 
