@@ -219,8 +219,13 @@ for place in places:
             )
             buttons = container.find_elements(By.CSS_SELECTOR, "[role='button']")
             buttons[0].click()
-            time.sleep(0.3)
+            time.sleep(0.5)
 
+            searched = True
+
+        except Exception as e:
+            print("The specified elements were not found within the given time.")
+        finally:
             window_handles = driver.window_handles
 
             for handle in window_handles:
@@ -228,12 +233,6 @@ for place in places:
                     driver.switch_to.window(handle)
                     driver.close()
             driver.switch_to.window(original_window)
-
-            searched = True
-
-        except Exception as e:
-            print("The specified elements were not found within the given time.")
-        finally:
             driver.switch_to.default_content()
 
         # Switch to iframe
@@ -245,7 +244,7 @@ for place in places:
                 EC.element_to_be_clickable((By.XPATH, "//a[.//span[text()='홈']]"))
             )
             home_button.click()
-            time.sleep(0.3)
+            time.sleep(0.5)
 
         # 선택한 첫번째 링크와 제목이 같은지 비교
         title_span = driver.find_element(By.CSS_SELECTOR, "div#_title span.GHAhO")
