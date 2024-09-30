@@ -99,6 +99,7 @@ options.add_argument("--no-sandbox")
 options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--remote-debugging-port=9222")
 options.add_argument("--window-size=1920,1080")
+options.add_argument("--disable-popup-blocking")
 
 # Specify the path to Chromium binary
 options.binary_location = "/snap/bin/chromium"
@@ -208,6 +209,12 @@ for place in places:
         # 검색해서 결과로 바로 이동 되지 않으면 첫번째 링크 클릭
         searched = False
         try:
+            override_js = """
+            window.open = function(url, name, features) {
+                console.log('window.open called with URL:', url);
+            };
+            """
+            driver.execute_script(override_js)
             s_iframe = wait.until(
                 EC.presence_of_element_located((By.ID, "searchIframe"))
             )
