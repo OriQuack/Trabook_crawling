@@ -122,6 +122,7 @@ url = (
     "https://map.naver.com/p/entry/place/1793953868?c=15.00,0,0,0,dh&placePath=/review"
 )
 driver.get(url)
+original_window = driver.current_window_handle
 driver.implicitly_wait(1.5)
 wait = WebDriverWait(driver, 1.5)
 time.sleep(1.5)
@@ -132,7 +133,7 @@ with open("output.jsonl", "r", encoding="utf-8") as f:
     for line in f:
         json_obj = json.loads(line)
 
-        if "title" in json_obj and "reviews" in json_obj:
+        if "title" in json_obj:
             existing_titles.append(json_obj["title"])
 
 # Get 관광지 names
@@ -209,12 +210,6 @@ for place in places:
         # 검색해서 결과로 바로 이동 되지 않으면 첫번째 링크 클릭
         searched = False
         try:
-            override_js = """
-            window.open = function(url, name, features) {
-                console.log('window.open called with URL:', url);
-            };
-            """
-            driver.execute_script(override_js)
             s_iframe = wait.until(
                 EC.presence_of_element_located((By.ID, "searchIframe"))
             )
@@ -224,6 +219,16 @@ for place in places:
             )
             buttons = container.find_elements(By.CSS_SELECTOR, "[role='button']")
             buttons[0].click()
+            time.sleep(0.3)
+
+            window_handles = driver.window_handles
+
+            for handle in window_handles:
+                if handle != original_window:
+                    driver.switch_to.window(handle)
+                    driver.close()
+            driver.switch_to.window(original_window)
+
             searched = True
 
         except Exception as e:
