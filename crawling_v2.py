@@ -252,7 +252,7 @@ for place in places:
             EC.presence_of_element_located((By.CSS_SELECTOR, "div.vV_z_"))
         )
         location = parent.find_element(By.CLASS_NAME, "LDgIH")
-        if not title != title_span.text:
+        if title != title_span.text:
             check.append(f"{title}: {title_span.text} # {loc}: {location.text}")
 
         # 리뷰 클릭
