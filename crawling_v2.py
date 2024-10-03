@@ -15,81 +15,8 @@ import requests
 import chromedriver_autoinstaller
 from urllib.parse import urlparse, parse_qs
 
-import re
 
-
-def process_address(address):
-    # Remove content in parentheses
-    address = re.sub(r"\([^)]*\)", "", address)
-    # Split address into tokens
-    tokens = address.strip().split()
-    # Remove the province name (assumed to be the first word)
-    if tokens:
-        tokens = tokens[1:]
-    components = {}
-    i = 0
-    while i < len(tokens):
-        token = tokens[i]
-        if token.endswith("시"):
-            components["city"] = token
-        elif token.endswith("군"):
-            components["county"] = token
-        elif token.endswith("구"):
-            components["district"] = token
-        elif token.endswith("읍") or token.endswith("면") or token.endswith("동"):
-            components["town"] = token
-        elif token.endswith("길") or token.endswith("로"):
-            # Street name
-            components["street"] = token
-            # Check if next token is number
-            if i + 1 < len(tokens):
-                next_token = tokens[i + 1]
-                if next_token.replace("-", "").isdigit():
-                    components["number"] = next_token
-                    i += 1  # Skip next token
-        elif token.replace("-", "").isdigit() and "number" not in components:
-            # It's a pure number or number with dash, and number not already set
-            components["number"] = token
-        else:
-            # Other tokens
-            pass  # Ignore other tokens
-        i += 1
-    return components
-
-
-def compare_addresses(addr1, addr2):
-    comp1 = process_address(addr1)
-    comp2 = process_address(addr2)
-    # Compare city
-    if comp1.get("city", "") != comp2.get("city", ""):
-        return False
-    # Compare county
-    if comp1.get("county", "") != comp2.get("county", ""):
-        return False
-    # Compare street
-    if comp1.get("street", "") != comp2.get("street", ""):
-        return False
-    # Compare building number
-    num1 = comp1.get("number", "")
-    num2 = comp2.get("number", "")
-    if num1 == "" or num2 == "":
-        return False
-    # Remove numbers after dash
-    num1_base = num1.split("-")[0]
-    num2_base = num2.split("-")[0]
-    try:
-        num1_int = int(num1_base)
-        num2_int = int(num2_base)
-        if abs(num1_int - num2_int) <= 5:
-            return True
-        else:
-            return False
-    except ValueError:
-        if num1_base == num2_base:
-            return True
-        else:
-            return False
-
+AREA = ""
 
 # WebDriver headless mode settings
 options = webdriver.ChromeOptions()
@@ -129,7 +56,7 @@ time.sleep(1.5)
 
 # 에러가 없는 title들 선택
 existing_titles = []
-with open("output.jsonl", "r", encoding="utf-8") as f:
+with open(f"output_{AREA}.jsonl", "r", encoding="utf-8") as f:
     for line in f:
         json_obj = json.loads(line)
 
@@ -172,7 +99,7 @@ BUFFER_LIMIT = 5  # 버퍼에 데이터를 몇 개 모을지 설정
 # For each place
 for place in places:
     # 해당 지역만 진행
-    if place["areacode"] != "인천":
+    if place["areacode"] != AREA:
         continue
 
     title = place["title"]
@@ -224,7 +151,7 @@ for place in places:
             searched = True
 
         except Exception as e:
-            print("The specified elements were not found within the given time.")
+            pass
         finally:
             window_handles = driver.window_handles
 
@@ -252,6 +179,8 @@ for place in places:
             EC.presence_of_element_located((By.CSS_SELECTOR, "div.vV_z_"))
         )
         location = parent.find_element(By.CLASS_NAME, "LDgIH")
+        if location == "":
+            lacation = "N/A"
         if title != title_span.text:
             check.append(f"{title}: {title_span.text} # {loc}: {location.text}")
 
@@ -332,11 +261,11 @@ for place in places:
 
         # 버퍼가 가득 찼으면 파일에 기록
         if len(data_buffer) >= BUFFER_LIMIT:
-            save_data(data_buffer, "output.jsonl")
+            save_data(data_buffer, f"output_{AREA}.jsonl")
             data_buffer = []  # 버퍼 초기화
             save_errors(error_buffer, "error.txt")
             error_buffer = []  # 버퍼 초기화
-            save_checks(check, "check.txt")
+            save_checks(check, f"check_{AREA}.txt")
             check = []  # 버퍼 초기화
 
     except Exception as e:
@@ -351,6 +280,6 @@ for place in places:
         driver.switch_to.default_content()
         continue
 
-save_data(data_buffer, "output.jsonl")
+save_data(data_buffer, f"output_{AREA}.jsonl")
 save_errors(error_buffer, "error.txt")
-save_checks(check, "check.txt")
+save_checks(check, f"check_{AREA}.txt")
